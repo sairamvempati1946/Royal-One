@@ -31,6 +31,8 @@
             --off-white: #f8fafc;
             --error: #ff6b6b;
             --success: #38b000;
+            --whatsapp: #25D366; /* WhatsApp green */
+            --warning: #ffa500; /* Orange for warnings */
         }
         
         /* Reset & Base Styles */
@@ -469,6 +471,10 @@
             border-color: var(--error);
         }
         
+        .form-group.warning input {
+            border-color: var(--warning);
+        }
+        
         .form-error {
             color: var(--error);
             font-size: 0.8rem;
@@ -490,6 +496,18 @@
         }
         
         .form-group.valid .form-success {
+            display: block;
+        }
+        
+        .form-warning {
+            color: var(--warning);
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: none;
+            font-weight: 500;
+        }
+        
+        .form-group.warning .form-warning {
             display: block;
         }
         
@@ -573,6 +591,69 @@
         
         .radio-options input {
             margin-right: 8px;
+        }
+        
+        /* WhatsApp Button */
+        .whatsapp-btn {
+            background: linear-gradient(135deg, var(--whatsapp), #128C7E);
+            color: var(--white);
+            border: none;
+            padding: 18px 30px;
+            border-radius: 5px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+            letter-spacing: 1px;
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            animation: fadeInUp 0.6s ease-out 1.7s both;
+            opacity: 0;
+        }
+        
+        .whatsapp-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+            background: linear-gradient(135deg, #1bd366, #0daa8c);
+        }
+        
+        .whatsapp-btn i {
+            font-size: 1.3rem;
+        }
+        
+        /* Submission Options */
+        .submission-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .option-note {
+            text-align: center;
+            color: var(--blue-dark);
+            font-size: 0.9rem;
+            margin: 5px 0;
+            font-style: italic;
+        }
+        
+        /* Postcode Helper */
+        .postcode-helper {
+            font-size: 0.8rem;
+            color: var(--blue-medium);
+            margin-top: 5px;
+            display: none;
+            font-weight: 500;
+        }
+        
+        .form-group.valid .postcode-helper {
+            display: block;
+            color: var(--success);
         }
         
         /* Stats Section */
@@ -1743,10 +1824,12 @@
                     </div>
                     
                     <div class="form-group" style="--i: 4;">
-                        <label for="postcode">Post code*</label>
-                        <input type="text" id="postcode" name="postcode" required placeholder="Your post code">
-                        <div class="form-error">Please enter a valid 4-digit post code</div>
-                        <div class="form-success">✓ Valid post code</div>
+                        <label for="postcode">Victoria Post Code*</label>
+                        <input type="text" id="postcode" name="postcode" required placeholder="Enter your VIC post code (3000-3999)" maxlength="4">
+                        <div class="form-error" id="postcodeError">Please enter a valid 4-digit Victoria post code (3000-3999)</div>
+                        <div class="form-warning" id="postcodeWarning">This post code may not be in Victoria. Rebates are only available for VIC residents.</div>
+                        <div class="form-success">✓ Valid Victoria post code</div>
+                        <div class="postcode-helper" id="postcodeHelper"></div>
                     </div>
                     
                     <div class="form-group" style="--i: 5;">
@@ -1795,9 +1878,17 @@
                         </label>
                     </div>
                     
-                    <button type="submit" class="submit-btn">
-                        <i class="fas fa-paper-plane" style="margin-right: 10px;"></i> Apply Now
-                    </button>
+                    <div class="submission-options">
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-paper-plane" style="margin-right: 10px;"></i> Submit Online
+                        </button>
+                        
+                        <p class="option-note">OR</p>
+                        
+                        <button type="button" class="whatsapp-btn" id="whatsappSubmit">
+                            <i class="fab fa-whatsapp" style="margin-right: 10px;"></i> Send via WhatsApp
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -2037,7 +2128,7 @@
                     
                     <!-- Contact Information -->
                     <div class="contact-info">
-                        <p><i class="fas fa-phone"></i> 1300 123 456</p>
+                        <p><i class="fas fa-phone"></i> +61 433 794 469</p>
                         <p><i class="fas fa-envelope"></i> info@royaloneenergy.com.au</p>
                     </div>
                     
@@ -2096,7 +2187,7 @@
             </div>
             
             <div class="copyright">
-                <p>&copy; <span id="currentYear">2025</span> All rights reserved. | Royal One - green energy green planet | VIC Rebate License #: REB12345 | Electrical License #: A123456</p>
+                <p>&copy; <span id="currentYear">2025</span> Royal One. All rights reserved. | green energy green planet | VIC Rebate License #: REB12345 | Electrical License #: A123456</p>
             </div>
         </div>
     </footer>
@@ -2112,6 +2203,639 @@
         const currentYearSpan = document.getElementById('currentYear');
         const eligibilityForm = document.getElementById('eligibilityForm');
         const mainHeader = document.getElementById('mainHeader');
+        const whatsappSubmitBtn = document.getElementById('whatsappSubmit');
+        const postcodeInput = document.getElementById('postcode');
+        const postcodeHelper = document.getElementById('postcodeHelper');
+        
+        // WhatsApp Configuration
+        const WHATSAPP_NUMBER = "+91 9553774933";
+        const COMPANY_NAME = "Royal One Energy Solutions";
+        
+        // Victoria Post Code Ranges (3000-3999)
+        const VIC_POSTCODE_RANGES = [
+            { min: 3000, max: 3999, description: "Victoria" },
+            // Common Melbourne post codes
+            { min: 3000, max: 3207, description: "Melbourne CBD & Inner Suburbs" },
+            { min: 3750, max: 3812, description: "Eastern Suburbs" },
+            { min: 3020, max: 3064, description: "Western Suburbs" },
+            { min: 3070, max: 3124, description: "Northern Suburbs" },
+            { min: 3140, max: 3207, description: "Southern Suburbs" },
+            { min: 3800, max: 3812, description: "Casey & Cardinia" },
+            { min: 3335, max: 3424, description: "Western Victoria" },
+            { min: 3440, max: 3689, description: "Northern Victoria" },
+            { min: 3700, max: 3749, description: "North Eastern Victoria" },
+            { min: 3820, max: 3999, description: "Gippsland & South Eastern Victoria" }
+        ];
+        
+        // Common Victorian post codes with suburb names
+        const VIC_POSTCODES = {
+            3000: "Melbourne",
+            3001: "Melbourne",
+            3002: "East Melbourne",
+            3003: "West Melbourne",
+            3004: "Melbourne",
+            3006: "Southbank",
+            3008: "Docklands",
+            3011: "Footscray",
+            3020: "Werribee",
+            3029: "Hoppers Crossing",
+            3030: "Point Cook",
+            3037: "Broadmeadows",
+            3047: "Gladstone Park",
+            3051: "North Melbourne",
+            3052: "Parkville",
+            3053: "Carlton",
+            3060: "Fitzroy",
+            3064: "Abbotsford",
+            3068: "Clifton Hill",
+            3070: "Northcote",
+            3072: "Reservoir",
+            3073: "Thomastown",
+            3076: "Bundoora",
+            3081: "Heidelberg",
+            3083: "Viewbank",
+            3084: "Greensborough",
+            3085: "Montmorency",
+            3088: "Briar Hill",
+            3093: "Eltham",
+            3094: "Research",
+            3095: "Wattle Glen",
+            3097: "Diamond Creek",
+            3099: "Panton Hill",
+            3101: "Kew",
+            3102: "Kew East",
+            3103: "Balwyn",
+            3104: "Balwyn North",
+            3105: "Bulleen",
+            3106: "Templestowe",
+            3107: "Templestowe Lower",
+            3108: "Doncaster",
+            3109: "Doncaster East",
+            3111: "Donvale",
+            3121: "Burnley",
+            3122: "Hawthorn",
+            3123: "Hawthorn East",
+            3124: "Camberwell",
+            3125: "Kew",
+            3126: "Burwood",
+            3127: "Surrey Hills",
+            3128: "Box Hill",
+            3129: "Box Hill North",
+            3130: "Blackburn",
+            3131: "Nunawading",
+            3132: "Mitcham",
+            3133: "Vermont",
+            3134: "Ringwood",
+            3135: "Warrandyte",
+            3136: "Doncaster",
+            3137: "Doncaster East",
+            3138: "Donvale",
+            3141: "South Yarra",
+            3142: "Toorak",
+            3143: "Armadale",
+            3144: "Malvern",
+            3145: "Caulfield",
+            3146: "Glen Iris",
+            3147: "Ashburton",
+            3148: "Chadstone",
+            3149: "Murrumbeena",
+            3150: "Oakleigh",
+            3151: "Huntingdale",
+            3152: "Clayton",
+            3153: "Westall",
+            3154: "Springvale",
+            3155: "Noble Park",
+            3156: "Mulgrave",
+            3158: "Wheelers Hill",
+            3159: "Scoresby",
+            3160: "Rowville",
+            3161: "Glen Waverley",
+            3162: "Mount Waverley",
+            3163: "Syndal",
+            3165: "Bentleigh",
+            3166: "McKinnon",
+            3167: "Ormond",
+            3168: "Brighton",
+            3169: "Elwood",
+            3170: "St Kilda",
+            3171: "Balaclava",
+            3172: "Caulfield",
+            3173: "Carnegie",
+            3174: "Murrumbeena",
+            3175: "Hughesdale",
+            3177: "Oakleigh",
+            3178: "Clayton",
+            3179: "Westall",
+            3180: "Springvale",
+            3181: "Noble Park",
+            3182: "Dandenong",
+            3183: "Dandenong North",
+            3184: "Dandenong",
+            3185: "Springvale",
+            3186: "Keysborough",
+            3187: "Noble Park",
+            3188: "Chelsea",
+            3189: "Carrum",
+            3190: "Bonbeach",
+            3191: "Seaford",
+            3192: "Frankston",
+            3193: "Frankston North",
+            3194: "Frankston South",
+            3195: "Langwarrin",
+            3196: "Baxter",
+            3197: "Somerville",
+            3198: "Tyabb",
+            3199: "Hastings",
+            3200: "Geelong",
+            3211: "Corio",
+            3212: "Norlane",
+            3214: "Geelong West",
+            3215: "North Geelong",
+            3216: "Belmont",
+            3217: "Highton",
+            3218: "Waurn Ponds",
+            3219: "Grovedale",
+            3220: "Newtown",
+            3221: "Lara",
+            3222: "Lara",
+            3223: "Lara",
+            3224: "Ocean Grove",
+            3225: "Barwon Heads",
+            3226: "Torquay",
+            3227: "Jan Juc",
+            3228: "Anglesea",
+            3230: "Colac",
+            3249: "Torquay",
+            3250: "Colac",
+            3260: "Camperdown",
+            3264: "Terang",
+            3265: "Mortlake",
+            3266: "Warrnambool",
+            3270: "Ararat",
+            3272: "Stawell",
+            3276: "Horsham",
+            3280: "Hamilton",
+            3282: "Portland",
+            3284: "Heywood",
+            3285: "Casterton",
+            3286: "Merino",
+            3287: "Dartmoor",
+            3289: "Cavendish",
+            3290: "Nelson",
+            3293: "Coleraine",
+            3294: "Balmoral",
+            3300: "Port Fairy",
+            3301: "Portland",
+            3302: "Casterton",
+            3303: "Hamilton",
+            3304: "Coleraine",
+            3305: "Portland",
+            3310: "Nhill",
+            3311: "Kaniva",
+            3312: "Serviceton",
+            3314: "Dimboola",
+            3315: "Antwerp",
+            3317: "Jeparit",
+            3318: "Rainbow",
+            3319: "Yaapeet",
+            3321: "Horsham",
+            3322: "Horsham",
+            3323: "Horsham",
+            3324: "Horsham",
+            3325: "Horsham",
+            3328: "Edenhope",
+            3329: "Apsley",
+            3330: "Ballarat",
+            3331: "Ballarat",
+            3332: "Ballarat",
+            3333: "Ballarat",
+            3334: "Ballarat",
+            3335: "Ballarat",
+            3337: "Bacchus Marsh",
+            3338: "Darley",
+            3340: "Bacchus Marsh",
+            3341: "Ballan",
+            3342: "Gordon",
+            3345: "Buninyong",
+            3350: "Ballarat",
+            3351: "Ballarat",
+            3352: "Ballarat",
+            3355: "Smythesdale",
+            3356: "Linton",
+            3357: "Scarsdale",
+            3360: "Pitfield",
+            3361: "Creswick",
+            3363: "Clunes",
+            3364: "Talbot",
+            3370: "Ararat",
+            3371: "Ararat",
+            3373: "Maroona",
+            3375: "Lake Bolac",
+            3377: "Beaufort",
+            3378: "Raglan",
+            3379: "Streatham",
+            3380: "Stawell",
+            3381: "Stawell",
+            3384: "Great Western",
+            3385: "Stawell",
+            3387: "Halls Gap",
+            3388: "Dadswells Bridge",
+            3390: "Horsham",
+            3391: "Horsham",
+            3392: "Horsham",
+            3393: "Horsham",
+            3395: "Jeparit",
+            3396: "Warracknabeal",
+            3400: "Horsham",
+            3401: "Horsham",
+            3402: "Horsham",
+            3407: "Dimboola",
+            3409: "Nhill",
+            3412: "Kaniva",
+            3413: "Serviceton",
+            3414: "Minimay",
+            3415: "Goroke",
+            3418: "Natimuk",
+            3419: "Horsham",
+            3420: "Horsham",
+            3423: "Horsham",
+            3424: "Horsham",
+            3427: "Horsham",
+            3428: "Horsham",
+            3429: "Dimboola",
+            3430: "Horsham",
+            3431: "Horsham",
+            3432: "Horsham",
+            3434: "Horsham",
+            3435: "Horsham",
+            3437: "Horsham",
+            3438: "Horsham",
+            3440: "Woodend",
+            3441: "Woodend",
+            3442: "Macedon",
+            3444: "Romsey",
+            3446: "Lancefield",
+            3447: "Kilmore",
+            3448: "Wallan",
+            3450: "Bendigo",
+            3451: "Bendigo",
+            3453: "Bendigo",
+            3458: "Eaglehawk",
+            3460: "Castlemaine",
+            3461: "Castlemaine",
+            3462: "Castlemaine",
+            3463: "Harcourt",
+            3465: "Malmsbury",
+            3467: "Kyneton",
+            3468: "Woodend",
+            3469: "Trentham",
+            3472: "Maryborough",
+            3475: "St Arnaud",
+            3477: "Dunolly",
+            3478: "Bealiba",
+            3480: "Wycheproof",
+            3482: "Sea Lake",
+            3483: "Birchip",
+            3485: "Boort",
+            3487: "Quambatook",
+            3488: "Kerang",
+            3489: "Koondrook",
+            3490: "Swan Hill",
+            3491: "Swan Hill",
+            3494: "Lake Boga",
+            3496: "Piangil",
+            3498: "Ouyen",
+            3500: "Mildura",
+            3501: "Mildura",
+            3505: "Irymple",
+            3506: "Red Cliffs",
+            3507: "Werrimull",
+            3509: "Walpeup",
+            3512: "Ouyen",
+            3515: "Sea Lake",
+            3516: "Nandaly",
+            3517: "Woomelang",
+            3518: "Lascelles",
+            3520: "Swan Hill",
+            3522: "Kerang",
+            3523: "Koondrook",
+            3525: "Quambatook",
+            3527: "Boort",
+            3529: "Wycheproof",
+            3530: "Sea Lake",
+            3531: "Berriwillock",
+            3533: "Culgoa",
+            3537: "Donald",
+            3540: "Swan Hill",
+            3542: "Lake Boga",
+            3544: "Swan Hill",
+            3546: "Piangil",
+            3549: "Boundary Bend",
+            3550: "Bendigo",
+            3551: "Bendigo",
+            3555: "Kangaroo Flat",
+            3556: "Eaglehawk",
+            3557: "Raywood",
+            3558: "Inglewood",
+            3559: "Bridgewater",
+            3561: "Goornong",
+            3562: "Heathcote",
+            3563: "Rochester",
+            3564: "Elmore",
+            3565: "Colbinabbin",
+            3566: "Lockington",
+            3567: "Rushworth",
+            3568: "Toolleen",
+            3570: "Echuca",
+            3571: "Echuca",
+            3572: "Echuca",
+            3573: "Echuca",
+            3575: "Rochester",
+            3576: "Elmore",
+            3579: "Kyabram",
+            3580: "Kyabram",
+            3581: "Kyabram",
+            3583: "Tongala",
+            3584: "Stanhope",
+            3585: "Girgarre",
+            3586: "Cohuna",
+            3588: "Leitchville",
+            3589: "Gunbower",
+            3590: "Kerang",
+            3591: "Koondrook",
+            3594: "Swan Hill",
+            3595: "Lake Boga",
+            3596: "Swan Hill",
+            3597: "Piangil",
+            3599: "Boundary Bend",
+            3607: "Nagambie",
+            3608: "Wahring",
+            3610: "Murchison",
+            3612: "Mooroopna",
+            3614: "Mooroopna",
+            3616: "Shepparton",
+            3617: "Shepparton",
+            3618: "Shepparton",
+            3620: "Shepparton",
+            3621: "Shepparton",
+            3622: "Shepparton",
+            3623: "Shepparton",
+            3624: "Shepparton",
+            3629: "Murchison",
+            3630: "Benalla",
+            3631: "Benalla",
+            3632: "Benalla",
+            3633: "Benalla",
+            3634: "Benalla",
+            3635: "Benalla",
+            3636: "Benalla",
+            3637: "Benalla",
+            3638: "Benalla",
+            3639: "Benalla",
+            3640: "Benalla",
+            3641: "Benalla",
+            3643: "Benalla",
+            3644: "Wangaratta",
+            3646: "Wangaratta",
+            3647: "Wangaratta",
+            3649: "Wangaratta",
+            3658: "Bright",
+            3659: "Porepunkah",
+            3660: "Myrtleford",
+            3661: "Myrtleford",
+            3662: "Myrtleford",
+            3663: "Oxley",
+            3664: "Milawa",
+            3665: "Whitfield",
+            3666: "Cheshunt",
+            3669: "Wangaratta",
+            3670: "Wangaratta",
+            3671: "Wangaratta",
+            3672: "Wangaratta",
+            3673: "Wangaratta",
+            3675: "Benalla",
+            3676: "Benalla",
+            3677: "Swanpool",
+            3678: "Tatong",
+            3682: "Benalla",
+            3683: "Yarrawonga",
+            3685: "Rutherglen",
+            3687: "Wahgunyah",
+            3688: "Barnawartha",
+            3689: "Chiltern",
+            3690: "Wodonga",
+            3691: "Wodonga",
+            3694: "Wodonga",
+            3695: "Wodonga",
+            3697: "Tallangatta",
+            3698: "Tallangatta",
+            3699: "Tallangatta",
+            3700: "Corryong",
+            3701: "Corryong",
+            3704: "Corryong",
+            3705: "Corryong",
+            3707: "Corryong",
+            3708: "Corryong",
+            3709: "Corryong",
+            3711: "Corryong",
+            3712: "Corryong",
+            3713: "Corryong",
+            3714: "Corryong",
+            3715: "Corryong",
+            3717: "Corryong",
+            3718: "Corryong",
+            3719: "Corryong",
+            3720: "Corryong",
+            3722: "Corryong",
+            3723: "Corryong",
+            3724: "Corryong",
+            3725: "Corryong",
+            3726: "Corryong",
+            3727: "Corryong",
+            3728: "Corryong",
+            3730: "Corryong",
+            3732: "Corryong",
+            3733: "Corryong",
+            3735: "Corryong",
+            3737: "Corryong",
+            3738: "Corryong",
+            3739: "Corryong",
+            3740: "Corryong",
+            3741: "Corryong",
+            3744: "Corryong",
+            3746: "Corryong",
+            3747: "Corryong",
+            3749: "Corryong",
+            3750: "Corryong",
+            3752: "Corryong",
+            3753: "Corryong",
+            3754: "Corryong",
+            3755: "Corryong",
+            3756: "Corryong",
+            3757: "Corryong",
+            3758: "Corryong",
+            3759: "Corryong",
+            3760: "Corryong",
+            3761: "Corryong",
+            3762: "Corryong",
+            3763: "Corryong",
+            3764: "Corryong",
+            3765: "Corryong",
+            3766: "Corryong",
+            3767: "Corryong",
+            3770: "Corryong",
+            3775: "Corryong",
+            3777: "Corryong",
+            3778: "Corryong",
+            3779: "Corryong",
+            3781: "Corryong",
+            3782: "Corryong",
+            3783: "Corryong",
+            3785: "Corryong",
+            3786: "Corryong",
+            3787: "Corryong",
+            3788: "Corryong",
+            3789: "Corryong",
+            3791: "Corryong",
+            3792: "Corryong",
+            3793: "Corryong",
+            3795: "Corryong",
+            3796: "Corryong",
+            3797: "Corryong",
+            3799: "Corryong",
+            3800: "Corryong",
+            3802: "Corryong",
+            3803: "Corryong",
+            3804: "Corryong",
+            3805: "Corryong",
+            3806: "Corryong",
+            3807: "Corryong",
+            3808: "Corryong",
+            3809: "Corryong",
+            3810: "Pakenham",
+            3812: "Pakenham",
+            3813: "Pakenham",
+            3814: "Pakenham",
+            3815: "Pakenham",
+            3816: "Pakenham",
+            3818: "Pakenham",
+            3820: "Warragul",
+            3821: "Warragul",
+            3822: "Warragul",
+            3823: "Warragul",
+            3824: "Warragul",
+            3825: "Warragul",
+            3830: "Warragul",
+            3831: "Neerim",
+            3832: "Neerim",
+            3833: "Neerim",
+            3835: "Neerim",
+            3840: "Moe",
+            3842: "Moe",
+            3844: "Newborough",
+            3847: "Churchill",
+            3850: "Sale",
+            3851: "Sale",
+            3852: "Sale",
+            3853: "Sale",
+            3854: "Sale",
+            3856: "Sale",
+            3857: "Sale",
+            3858: "Sale",
+            3859: "Sale",
+            3860: "Bairnsdale",
+            3862: "Bairnsdale",
+            3864: "Bairnsdale",
+            3865: "Bairnsdale",
+            3869: "Bairnsdale",
+            3870: "Bairnsdale",
+            3871: "Bairnsdale",
+            3873: "Bairnsdale",
+            3874: "Bairnsdale",
+            3875: "Bairnsdale",
+            3878: "Bairnsdale",
+            3880: "Orbost",
+            3882: "Orbost",
+            3885: "Orbost",
+            3886: "Orbost",
+            3887: "Orbost",
+            3888: "Orbost",
+            3889: "Orbost",
+            3890: "Orbost",
+            3891: "Orbost",
+            3892: "Orbost",
+            3893: "Orbost",
+            3895: "Orbost",
+            3896: "Orbost",
+            3898: "Orbost",
+            3900: "Orbost",
+            3902: "Orbost",
+            3903: "Orbost",
+            3904: "Orbost",
+            3909: "Orbost",
+            3910: "Mornington",
+            3911: "Mornington",
+            3912: "Mornington",
+            3913: "Mornington",
+            3915: "Mornington",
+            3916: "Mornington",
+            3918: "Mornington",
+            3919: "Mornington",
+            3920: "Mornington",
+            3921: "Mornington",
+            3922: "Mornington",
+            3923: "Mornington",
+            3925: "Mornington",
+            3926: "Mornington",
+            3927: "Mornington",
+            3928: "Mornington",
+            3929: "Mornington",
+            3930: "Mornington",
+            3931: "Mornington",
+            3933: "Mornington",
+            3934: "Mornington",
+            3936: "Mornington",
+            3937: "Mornington",
+            3938: "Mornington",
+            3939: "Mornington",
+            3940: "Mornington",
+            3941: "Mornington",
+            3942: "Mornington",
+            3943: "Mornington",
+            3944: "Mornington",
+            3945: "Mornington",
+            3946: "Mornington",
+            3950: "Wonthaggi",
+            3951: "Wonthaggi",
+            3953: "Wonthaggi",
+            3954: "Wonthaggi",
+            3956: "Wonthaggi",
+            3957: "Wonthaggi",
+            3958: "Wonthaggi",
+            3959: "Wonthaggi",
+            3960: "Wonthaggi",
+            3962: "Wonthaggi",
+            3964: "Wonthaggi",
+            3965: "Wonthaggi",
+            3966: "Wonthaggi",
+            3967: "Wonthaggi",
+            3971: "Wonthaggi",
+            3975: "Wonthaggi",
+            3976: "Wonthaggi",
+            3977: "Wonthaggi",
+            3978: "Wonthaggi",
+            3979: "Wonthaggi",
+            3980: "Wonthaggi",
+            3981: "Wonthaggi",
+            3984: "Wonthaggi",
+            3987: "Wonthaggi",
+            3988: "Wonthaggi",
+            3990: "Wonthaggi",
+            3991: "Wonthaggi",
+            3992: "Wonthaggi",
+            3995: "Wonthaggi",
+            3996: "Wonthaggi"
+        };
         
         // Mobile Menu Toggle - FIXED
         function toggleMobileMenu() {
@@ -2159,56 +2883,42 @@
         eligibilityForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Get form elements
-            const form = e.target;
-            const formGroups = document.querySelectorAll('.form-group');
-            let isValid = true;
-            
-            // Validate all required fields
-            formGroups.forEach(group => {
-                const input = group.querySelector('input, select');
-                if (input && input.hasAttribute('required') && !input.value.trim()) {
-                    group.classList.add('invalid');
-                    group.classList.remove('valid');
-                    isValid = false;
-                }
-            });
-            
-            if (!isValid) {
-                // Scroll to first error
-                const firstError = document.querySelector('.form-group.invalid');
-                if (firstError) {
-                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-                return;
+            if (validateForm()) {
+                // Show loading state
+                const submitBtn = document.querySelector('.submit-btn');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                submitBtn.disabled = true;
+                
+                // Simulate API call
+                setTimeout(() => {
+                    // Show success message
+                    successMessage.classList.add('show');
+                    
+                    // Reset form
+                    eligibilityForm.reset();
+                    
+                    // Reset all validation states
+                    document.querySelectorAll('.form-group').forEach(group => {
+                        group.classList.remove('valid', 'invalid', 'warning');
+                    });
+                    
+                    // Reset button
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                    
+                    // Add confetti effect
+                    createConfetti();
+                }, 1500);
             }
-            
-            // Show loading state
-            const submitBtn = document.querySelector('.submit-btn');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            submitBtn.disabled = true;
-            
-            // Simulate API call
-            setTimeout(() => {
-                // Show success message
-                successMessage.classList.add('show');
-                
-                // Reset form
-                form.reset();
-                
-                // Reset all validation states
-                formGroups.forEach(group => {
-                    group.classList.remove('valid', 'invalid');
-                });
-                
-                // Reset button
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-                
-                // Add confetti effect
-                createConfetti();
-            }, 1500);
+        });
+        
+        // WhatsApp submission
+        whatsappSubmitBtn.addEventListener('click', function() {
+            if (validateForm()) {
+                const formData = getFormData();
+                sendWhatsAppMessage(formData);
+            }
         });
         
         // Enhanced real-time form validation
@@ -2231,6 +2941,75 @@
             });
         }
         
+        // Validate entire form
+        function validateForm() {
+            const formGroups = document.querySelectorAll('.form-group');
+            let isValid = true;
+            
+            // Validate all required fields
+            formGroups.forEach(group => {
+                const input = group.querySelector('input, select');
+                if (input && input.hasAttribute('required') && !input.value.trim()) {
+                    group.classList.add('invalid');
+                    group.classList.remove('valid', 'warning');
+                    isValid = false;
+                }
+            });
+            
+            // Check consent checkbox
+            const consentCheckbox = document.getElementById('consent');
+            if (!consentCheckbox.checked) {
+                consentCheckbox.parentElement.parentElement.classList.add('invalid');
+                isValid = false;
+            } else {
+                consentCheckbox.parentElement.parentElement.classList.remove('invalid');
+            }
+            
+            if (!isValid) {
+                // Scroll to first error
+                const firstError = document.querySelector('.form-group.invalid');
+                if (firstError) {
+                    firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Validate Victoria post code
+        function validateVictoriaPostcode(postcode) {
+            const postcodeNum = parseInt(postcode);
+            
+            // Check if it's a 4-digit number
+            if (isNaN(postcodeNum) || postcode.length !== 4) {
+                return { isValid: false, message: "Please enter a valid 4-digit post code" };
+            }
+            
+            // Check if it's in Victoria range (3000-3999)
+            if (postcodeNum >= 3000 && postcodeNum <= 3999) {
+                // Check if it's a known Victoria postcode
+                if (VIC_POSTCODES[postcodeNum]) {
+                    return { 
+                        isValid: true, 
+                        message: `✓ ${VIC_POSTCODES[postcodeNum]}, Victoria`,
+                        suburb: VIC_POSTCODES[postcodeNum]
+                    };
+                } else {
+                    return { 
+                        isValid: true, 
+                        message: "✓ Valid Victoria post code",
+                        suburb: "Victoria"
+                    };
+                }
+            } else {
+                return { 
+                    isValid: false, 
+                    message: "Rebates are only available for Victorian residents (post codes 3000-3999)" 
+                };
+            }
+        }
+        
         // Field validation function
         function validateField(field) {
             const formGroup = field.closest('.form-group');
@@ -2238,16 +3017,17 @@
             const isRequired = field.hasAttribute('required');
             
             // Clear previous states
-            formGroup.classList.remove('valid', 'invalid');
+            formGroup.classList.remove('valid', 'invalid', 'warning');
             
             // Skip validation for optional fields that are empty
             if (!isRequired && value === '') {
-                return;
+                return true;
             }
             
             // Validate based on field type
             let isValid = true;
             let errorMessage = '';
+            let warningMessage = '';
             
             if (isRequired && value === '') {
                 isValid = false;
@@ -2258,17 +3038,20 @@
                     isValid = false;
                     errorMessage = 'Please enter a valid email address';
                 }
-            } else if (field.id === 'postcode' && value !== '') {
-                const postcodeRegex = /^\d{4}$/;
-                if (!postcodeRegex.test(value)) {
-                    isValid = false;
-                    errorMessage = 'Please enter a valid 4-digit post code';
-                }
             } else if (field.id === 'phone' && value !== '') {
                 const phoneRegex = /^[\d\s\-\+\(\)]{8,}$/;
                 if (!phoneRegex.test(value.replace(/\s/g, ''))) {
                     isValid = false;
                     errorMessage = 'Please enter a valid phone number';
+                }
+            } else if (field.id === 'postcode' && value !== '') {
+                const postcodeResult = validateVictoriaPostcode(value);
+                if (!postcodeResult.isValid) {
+                    isValid = false;
+                    errorMessage = postcodeResult.message;
+                } else {
+                    // Show suburb information
+                    postcodeHelper.textContent = postcodeResult.message;
                 }
             } else if (field.type === 'select-one' && isRequired && value === '') {
                 isValid = false;
@@ -2278,9 +3061,125 @@
             // Apply validation state
             if (isValid && value !== '') {
                 formGroup.classList.add('valid');
+                if (field.id === 'postcode') {
+                    postcodeHelper.style.display = 'block';
+                }
             } else if (!isValid) {
                 formGroup.classList.add('invalid');
             }
+            
+            return isValid;
+        }
+        
+        // Get form data
+        function getFormData() {
+            const postcode = document.getElementById('postcode').value;
+            const postcodeResult = validateVictoriaPostcode(postcode);
+            const suburb = postcodeResult.suburb || 'Victoria';
+            
+            return {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                postcode: postcode,
+                suburb: suburb,
+                systemType: document.getElementById('systemType').value,
+                solar: document.getElementById('solar').value,
+                moreInfo: document.querySelector('input[name="moreInfo"]:checked')?.value || 'Not specified',
+                consent: document.getElementById('consent').checked,
+                timestamp: new Date().toLocaleString(),
+                source: 'Website Form'
+            };
+        }
+        
+        // Send WhatsApp message
+        function sendWhatsAppMessage(formData) {
+            // Format message
+            const message = formatWhatsAppMessage(formData);
+            
+            // Encode message for URL
+            const encodedMessage = encodeURIComponent(message);
+            
+            // Create WhatsApp URL
+            const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${encodedMessage}`;
+            
+            // Show loading state
+            const originalText = whatsappSubmitBtn.innerHTML;
+            whatsappSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening WhatsApp...';
+            whatsappSubmitBtn.disabled = true;
+            
+            // Open WhatsApp in new tab
+            setTimeout(() => {
+                window.open(whatsappUrl, '_blank');
+                
+                // Reset button
+                setTimeout(() => {
+                    whatsappSubmitBtn.innerHTML = originalText;
+                    whatsappSubmitBtn.disabled = false;
+                    
+                    // Show success message
+                    showWhatsAppSuccess();
+                    
+                    // Reset form after successful submission
+                    eligibilityForm.reset();
+                    document.querySelectorAll('.form-group').forEach(group => {
+                        group.classList.remove('valid', 'invalid', 'warning');
+                    });
+                    postcodeHelper.textContent = '';
+                    postcodeHelper.style.display = 'none';
+                }, 1000);
+            }, 500);
+        }
+        
+        // Format WhatsApp message
+        function formatWhatsAppMessage(formData) {
+            return `🎯 *New Royal One Rebate Application* 🎯
+
+👤 *Customer Information:*
+• First Name: ${formData.firstName}
+• Last Name: ${formData.lastName}
+• Email: ${formData.email}
+• Phone: ${formData.phone}
+• Location: ${formData.suburb}, VIC ${formData.postcode}
+
+🏠 *System Details:*
+• Current System: ${formData.systemType}
+• Rooftop Solar: ${formData.solar}
+• Interest in Additional Rebates: ${formData.moreInfo}
+
+📅 *Submission Details:*
+• Submitted: ${formData.timestamp}
+• Source: ${formData.source}
+• Consent Given: ${formData.consent ? 'Yes' : 'No'}
+
+🔗 *Follow-up Required:*
+Please contact this customer to discuss their eligibility for up to $3,000 in Victorian rebates and schedule a consultation.
+
+Thank you!`;
+        }
+        
+        // Show WhatsApp success message
+        function showWhatsAppSuccess() {
+            // Create success message
+            const successDiv = document.createElement('div');
+            successDiv.className = 'success-message';
+            successDiv.innerHTML = `
+                <i class="fab fa-whatsapp" style="color: var(--whatsapp); font-size: 4rem;"></i>
+                <h3>WhatsApp Ready!</h3>
+                <p>Your application details have been prepared. WhatsApp is now opening with your information pre-filled. Please send the message to complete your application.</p>
+                <button class="close-success" onclick="this.parentElement.remove()">Close</button>
+            `;
+            
+            document.body.appendChild(successDiv);
+            successDiv.classList.add('show');
+            
+            // Auto-remove after 8 seconds
+            setTimeout(() => {
+                if (successDiv.parentElement) {
+                    successDiv.remove();
+                }
+            }, 8000);
         }
         
         // Initialize form validation
@@ -2394,7 +3293,7 @@
         
         // Simple confetti effect
         function createConfetti() {
-            const colors = ['#0077b6', '#00b4d8', '#38b000', '#2d9146', '#ffffff'];
+            const colors = ['#0077b6', '#00b4d8', '#38b000', '#2d9146', '#ffffff', '#25D366'];
             const confettiCount = 100;
             
             for (let i = 0; i < confettiCount; i++) {
@@ -2448,8 +3347,16 @@
             if (window.scrollY > 50) {
                 mainHeader.classList.add('scrolled');
             }
+            
+            // Add WhatsApp number to footer contact info
+            const contactInfo = document.querySelector('.contact-info');
+            const whatsappContact = document.createElement('p');
+            whatsappContact.innerHTML = `<i class="fab fa-whatsapp"></i> ${WHATSAPP_NUMBER} (WhatsApp)`;
+            contactInfo.appendChild(whatsappContact);
+            
+            // Update postcode placeholder
+            postcodeInput.placeholder = "Enter your VIC post code (3000-3999)";
         });
     </script>
 </body>
 </html>
-
